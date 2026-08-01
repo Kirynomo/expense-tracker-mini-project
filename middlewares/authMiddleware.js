@@ -24,24 +24,3 @@ module.exports.userVerification = (req, res, next) => {
     }
   });
 };
-
-module.exports.refresh = (req, res, next) => {
-  const refreshToken = req.cookie.refreshToken;
-  if (!refreshToken) {
-    return res.json({ status: "false" });
-  }
-
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_KEY, async (err, data) => {
-    if (err) {
-      return res.json({ status: "false" });
-    } else {
-      const user = await User.findById(data.id);
-      if (refreshToken === user.refreshToken) {
-        const accessToken = createAccessToken(user._id);
-
-        res.cookie("accessToken", accessToken, { httpOnly: false });
-        return res.json({ success: true, accessToken });
-      }
-    }
-  });
-};

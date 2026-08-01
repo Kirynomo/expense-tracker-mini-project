@@ -98,6 +98,27 @@ module.exports.Logout = async (req, res) => {
   res.status(200).json({ success: true, msg: "user loggedout successfully" });
 };
 
-module.exports.profile = async (req, res) => {
-  res.json({ data: "data", user: req.user.username });
+// module.exports.profile = async (req, res) => {
+//   res.json({ data: "data", user: req.user.username });
+// };
+
+module.exports.refresh = async (req, res) => {
+  const refreshToken = req.cookie.refreshToken;
+  if (!refreshToken) {
+    return res.json({ status: "false" });
+  }
+
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_KEY, async (err, data) => {
+    if (err) {
+      return res.json({ status: "false" });
+    } else {
+      const user = await User.findById(data.id);
+      if (refreshToken === user.refreshToken) {
+        const accessToken = createAccessToken(user._id);
+
+        res.cookie("accessToken", accessToken, { httpOnly: false });
+        return res.json({ success: true, accessToken });
+      }
+    }
+  });
 };
