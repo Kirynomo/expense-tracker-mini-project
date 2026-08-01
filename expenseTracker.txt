@@ -1,0 +1,61 @@
+Expense Tracker
+day 22nd July 
+Started the expense trakcer project. MERN progress is going slower than planned. Created user model and now using JWT (first time)
+using fcc's jwt article. I understood and copied the signup controller but got a data and salt error, realized it was bcus i was taking user info from req.body instead of req.body.User....
+
+
+day 23rd July
+proceeded with login and verifyToken middleware. Cleared a few doubts and realized i must watch some concept videos before implementing other stuff.
+
+day 28th July
+downloaded hopscotch desktop app in order to view cookies required for jwt auth.
+Made notes on concepts like protected routes, user owned data, rate limiting, access tokens, refresh tokens, etc.
+
+Wacthed WDS video on JWT access and refresh token implementation and implemented in my project as well with some help and hints. Also created a dummy jwt project to practice along with the video.
+one doubt while creating the refresh middleware (the one that generates a new access token) : //doubt - my refresh and access token functions are made using _id as part of the token not the entire user object so will i be able to access data.refreshToken idts...yeah so apparently im mixing things my jwt payload it id: user._id and after verification u receive data which is id, iat, exp, it doesnt have refrshtoken.
+
+another doubt related to expiry set for cookies and the jwt tokens - both shud be set as setting expirty for jwt is necessary to prevent attacks, while for cookie its not harmful but unnecesaary as trhe browser might repeatedly send token that will never be used. so JWT expiry - real security mechanism, Cookie expiry - UX and browser behaviour. use both.
+
+my login route was failing due to bcrypt.compare : Your pre-save hook was rehashing the password every time you called save(), including when you updated the refresh token. That meant the stored password no longer matched the original plaintext password, so bcrypt.compare() correctly returned false.
+
+So today's debugging sequence was:
+
+✅ Fixed the pre-save middleware.
+✅ Recreated the user with a properly hashed password.
+✅ bcrypt.compare() started returning true....fixed by adding this line - if (!this.isModified("password")) return;
+
+
+testing my jwt routes - cud not access a protected route and was constantly getting no token msg bcus of hopscotch behaviour. Changing method to Bearer token using authorization header. Successfully worked! and since access token expired in 30 secs sending req again gave status : false too. 
+But im getting only the data field in the response, not the req.user.username dunno why
+
+
+day 29th July
+ yesterday's doubt on why req.user.username wasn't in response is that there was no username for the kibry user that why. I had done /signup for Kirby without username. lol. Everything works correctly now.
+Got geeked out in ubuntu set up lmao
+created expenses model.
+Next steps - create /get and /post expenses routes that returns protected data.
+Post route working successfully. I login, then copy the access token, paste it in authorization header, give req.body for expenses (amount,category, description), and then send the req. so the right thing is reflected in the db with correct user ids!
+
+
+day 31st July
+So making the /get expenses route and a few errors have occurred bcus i forgot to use await while fetching data from mongo : Expense.findById() returns a Mongoose Query object, not the actual expense.
+const expenses = Expense.findById(req.user._id);
+// expenses = Mongoose Query object
+
+res.json(expenses);
+And Express tries to JSON-stringify that Query object → MongoDB internals → circular reference 💥
+this is an important Mongoose distinction: a Query object ≠ the result of the query. await actually executes/resolves it into the data you wanted.
+
+Another bug:  Im trying to show all expenses belonging to the logged-in user then i should NOT use findById().
+findById() means: "Find the Expense whose _id is this value."
+But req.user._id is the User's ID, not an Expense ID.
+correction : const expenses = await Expense.find({
+  userId: req.user._id
+});
+
+Created the patch and delete request and tested my endpoints. Also tested by loggin in as Kirby and changing expense created by Shreeya so that worked bcus i did not implement the ownership check yet. Successfully implemented and tested the user ownership check in the /patch and /delete routes. first logged in as a user 1, then copy pasted accessToken in the authorization header, then changed routes and http method to edit/delete user 2's info (_id) and sent the request! Worked as expected - 403 forbidden.
+next task - centralized error handling middleware
+
+day 01 aug
+Added this project to git and then pushed to GitHub, error handlers left.
+Studied about refresh logic properly and understood its need, its purpose, where it comes from(http client interceptor), and why it is a controller rather than a middleware.  
